@@ -40,7 +40,7 @@ input[type=checkbox],input[type=radio]{width:18px;height:18px;accent-color:var(-
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .kpi{background:var(--c2);border-radius:10px;padding:8px 10px}
 .kpi .k{font-size:11px;color:var(--m);text-transform:uppercase;letter-spacing:.03em}.kpi .v{font-size:19px;font-weight:700}
-.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:700;font-size:12px;white-space:nowrap}
+.badge{display:inline-block;flex:none;height:fit-content;padding:3px 10px;border-radius:999px;font-weight:700;font-size:12px;white-space:nowrap}
 .bg{background:rgba(63,212,122,.15);color:var(--g);border:1px solid var(--g)}
 .br{background:rgba(255,92,108,.15);color:var(--r);border:1px solid var(--r)}
 .ba{background:rgba(255,184,77,.15);color:var(--a);border:1px solid var(--a)}
@@ -113,7 +113,9 @@ background:conic-gradient(var(--k) calc(var(--s)*1%),var(--c2) 0);position:relat
 <section class="view" id="v-tips">
   <div class="status"><div class="dot off" id="stDot"></div><div class="txt" id="stTxt">Bereit</div><button id="refresh">↻ Jetzt</button></div>
   <div id="tipsMsg"></div>
+  <div class="seg" id="pSeg" style="--k:var(--g)"><button data-p="0">Alle</button><button data-p="0.45">🙂 Eher sicher</button><button data-p="0.6">🛡 Favoriten</button></div>
   <div id="tipsArea"></div>
+  <div id="fairArea"></div>
   <div id="sureArea"></div>
   <div id="watchArea"></div>
 
@@ -209,6 +211,10 @@ background:conic-gradient(var(--k) calc(var(--s)*1%),var(--c2) 0);position:relat
     <div class="seg" style="--k:var(--b)" id="riskSeg">
       <button data-r="safe">🛡 Vorsichtig</button><button data-r="normal">⚖️ Normal</button><button data-r="bold">🔥 Mutig</button></div>
     <div class="note" id="riskNote"></div>
+    <div class="grp" style="margin-top:12px">Einsatz pro Tipp</div>
+    <label class="chk"><input type="radio" name="sm" value="kelly" id="smK"> Automatisch (Kelly) <span class="mut">– mathematisch optimal, eher klein</span></label>
+    <label class="chk"><input type="radio" name="sm" value="fix" id="smF"> Fester Betrag: <input id="o_fix" type="number" inputmode="decimal" style="width:80px;padding:6px"> €</label>
+    <div class="note" style="margin-top:0">Fest: Top-Tipp = voller Betrag, Guter Tipp = 75 %, Kleiner Value = 50 %.</div>
     <div class="grid" style="margin-top:8px"><div><label>Bankroll €</label><input id="o_bank" type="number" inputmode="decimal"></div>
       <div><label>Verlustlimit/Monat €</label><input id="o_lim" type="number" inputmode="decimal"></div></div>
   </div>
@@ -291,16 +297,17 @@ const RISK={safe:{kelly:.15,minScore:45,maxBet:2,txt:'Kleine Einsätze, nur Tipp
             normal:{kelly:.25,minScore:30,maxBet:3,txt:'Ausgewogen – ¼ Kelly, empfohlen.'},
             bold:{kelly:.4,minScore:15,maxBet:5,txt:'Größere Einsätze, mehr Tipps. Stärkere Schwankungen!'}};
 const DEF={key:'',risk:'normal',bank:200,lim:50,books:['tipico_de','winamax_de'],allBooks:true,lmode:'auto',sports:['soccer_germany_bundesliga','soccer_epl'],
-  autoN:5,markets:['h2h'],minEdge:1.5,maxEdge:20,minQ:1.3,maxQ:6,maxBet:3,tax:0,hours:72,minScore:30,auto:1,res:20,live:false,kelly:.25,ver:3};
+  autoN:4,markets:['h2h','totals'],minP:0,stakeMode:'kelly',fix:5,minEdge:1.5,maxEdge:20,minQ:1.3,maxQ:6,maxBet:3,tax:0,hours:72,minScore:30,auto:1,res:20,live:false,kelly:.25,ver:4};
 let S=Object.assign({},DEF,store.get('wb2_set',{}));
-if(S.ver!==3){const k=S.key,b=S.bank,l=S.lim,bk=S.books;S=Object.assign({},DEF,{key:k||'',bank:b||200,lim:l||50,books:bk&&bk.length?bk:DEF.books});store.set('wb2_set',S)}
+if(S.ver===3){S.markets=['h2h','totals'];S.autoN=4;S.minP=0;S.stakeMode='kelly';S.fix=5;S.ver=4;store.set('wb2_set',S)}
+if(S.ver!==4){const k=S.key,b=S.bank,l=S.lim,bk=S.books;S=Object.assign({},DEF,{key:k||'',bank:b||200,lim:l||50,books:bk&&bk.length?bk:DEF.books});store.set('wb2_set',S)}
 const saveS=()=>store.set('wb2_set',S);
 
 /* ═════════ Navigation ═════════ */
 const VIEWS=['tips','track','tools','setup'];
 function show(v){if(!VIEWS.includes(v))v='tips';
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
-  VIEWS.forEach(x=>$('v-'+x).classList.toggle('on',x===v));window.scrollTo(0,0);if(v==='tools')fillQC()}
+  VIEWS.forEach(x=>$('v-'+x).classList.toggle('on',x===v));window.scrollTo(0,0);if(v==='tools')fillQC();if(v==='tips'&&typeof renderTips==='function'&&LAST)renderTips()}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{location.hash=b.dataset.v;show(b.dataset.v)});
 window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
 
@@ -409,9 +416,11 @@ function bewerte(o){
   else if(h>48){v*=.9;why.push(['n','weit entfernt – Quoten wackeln'])}
   if(o.n>=8){v*=1.05;why.push(['p',`${o.n} Buchmacher`])}else if(o.n<4){v*=.85;why.push(['n',`nur ${o.n} Buchmacher`])}
   if(o.quote>4){v*=.85;why.push(['n','Außenseiter'])}
+  if(o.p>=.6){v*=1.08;why.push(['p',`✓ Favorit (${Math.round(o.p*100)} %)`])}else if(o.p<.3){v*=.9}
   o.vertrauen=Math.max(.35,Math.min(1.25,v));
   o.score=Math.max(0,Math.min(100,Math.round(100*Math.pow(Math.max(0,Math.min(o.edge,.1))/.1,.6)*o.vertrauen/1.1)));
   const k=kellyStake(o.p,o.quote*(1-S.tax/100),Math.min(1,o.vertrauen));o.einsatz=k.einsatz;o.anteil=k.anteil;
+  if(S.stakeMode==='fix'&&o.edge>0){const f=o.score>=65?1:o.score>=40?.75:.5;o.einsatz=Math.max(.5,Math.round(S.fix*f*2)/2);o.anteil=o.einsatz/S.bank}
   o.erwartet=o.einsatz*o.edge;o.why=why;return o;
 }
 function label(sc){return sc>=65?['TOP-TIPP','var(--g)','bg']:sc>=40?['GUTER TIPP','var(--c)','bb']:['KLEINER VALUE','var(--a)','ba']}
@@ -485,8 +494,8 @@ function renderTips(){
   if(!busy)setStatus(LAST.demo?'busy':'',LAST.demo?'🧪 Demo-Daten – nicht echt':`Aktualisiert ${vor(LAST.zeit)} · ${LAST.ligen.length} Ligen${nx?` · nächster Scan ${nx<Date.now()?'gleich':uhr(nx)}`:''}`);
   const hidden=new Set(store.get('wb2_hidden',[])),gesetzt=new Set(bets.map(b=>b.key).filter(Boolean));
   const jetzt=Date.now();
-  const alle=LAST.K.filter(o=>new Date(o.start)>jetzt-(S.live?3*36e5:0));
-  TIPS=alle.filter(o=>o.edge>=S.minEdge/100&&o.score>=S.minScore&&o.einsatz>0&&!hidden.has(tk(o))&&!gesetzt.has(tk(o)))
+  const alle=LAST.K.filter(o=>new Date(o.start)>jetzt-(S.live?3*36e5:0)).map(o=>bewerte(o));
+  TIPS=alle.filter(o=>o.p>=S.minP&&o.edge>=S.minEdge/100&&o.score>=S.minScore&&o.einsatz>0&&!hidden.has(tk(o))&&!gesetzt.has(tk(o)))
     .sort((a,b)=>b.score-a.score||b.edge-a.edge);
   // pro Spiel max. 1 Tipp (der beste)
   const seen=new Set();TIPS=TIPS.filter(o=>{const k=o.id;if(seen.has(k))return false;seen.add(k);return true});
@@ -500,13 +509,22 @@ function renderTips(){
   }else{
     $('tipsArea').innerHTML=`<div class="card empty" style="--k:var(--a)"><div class="ic">🧘</div>
       <div class="t" style="margin-top:6px">Gerade nichts Schlaues zu setzen</div>
-      <div class="mut" style="margin-top:4px">${alle.length} Quoten geprüft – keine mit genug Value. Das ist normal: lieber nicht wetten als schlecht wetten.${nx?`<br>Nächster automatischer Scan: <b>${nx<Date.now()?'gleich':uhr(nx)}</b>`:''}</div></div>`;
+      <div class="mut" style="margin-top:4px">${alle.length} Quoten geprüft – keine mit genug Value${S.minP?` und ≥ ${Math.round(S.minP*100)} % Chance`:''}. Das ist normal: lieber nicht wetten als schlecht wetten.${nx?`<br>Nächster automatischer Scan: <b>${nx<Date.now()?'gleich':uhr(nx)}</b>`:''}</div></div>`;
   }
   $('tipsArea').querySelectorAll('[data-set]').forEach(b=>b.onclick=()=>{const o=TIPS[+b.dataset.set];
     addBet({key:tk(o),eid:o.id,sport:o.sport,markt:o.markt,sel:o.auswahl,home:o.home,away:o.away,start:o.start,e:o.spiel,t:o.auswahl,bk:o.buch,q:o.quote,s:o.einsatz});
     renderTips();toast('✓ Im Tracker gespeichert')});
   $('tipsArea').querySelectorAll('[data-hide]').forEach(b=>b.onclick=()=>{const o=TIPS[+b.dataset.hide];
     const h=store.get('wb2_hidden',[]);h.push(tk(o));store.set('wb2_hidden',h.slice(-300));renderTips()});
+  // Faire Favoriten: wahrscheinlich, Quote ≈ fair (kein Nachteil)
+  const tipIds=new Set(TIPS.map(o=>o.id));const fs=new Set();
+  const fair=alle.filter(o=>o.p>=Math.max(.55,S.minP)&&o.edge>=-0.005&&!TIPS.includes(o)&&!tipIds.has(o.id)&&!hidden.has(tk(o)))
+    .sort((a,b)=>b.p-a.p).filter(o=>{if(fs.has(o.id))return false;fs.add(o.id);return true}).slice(0,6);
+  $('fairArea').innerHTML=fair.length?`<div class="card" style="--k:var(--b)"><h2>🛡 Wahrscheinlich & fair bepreist</h2>
+    <div class="note" style="margin-top:-6px">Hohe Chance, Quote ≈ fairer Preis: kein Vorteil, aber auch kein Buchmacher-Nachteil. Gut für wenig Schwankung – Gewinn auf Dauer ≈ 0.</div>`+
+    fair.map(o=>`<div class="watch"><div><b>${o.markt==='totals'?esc(o.auswahl):esc(o.auswahl)+(o.auswahl==='Unentschieden'?'':' gewinnt')}</b> @ <b>${f2(o.quote)}</b> <span class="mut">${esc(o.buch)}</span>
+      <div class="mut">${icon(o.sport)} ${esc(o.spiel)} · ${zeit(o.start)}</div></div>
+      <div style="text-align:right"><span class="badge bb">${Math.round(o.p*100)} %</span><div class="mut" style="margin-top:3px">${o.edge>=0?'+':''}${pct(o.edge)}</div></div></div>`).join('')+'</div>':'';
   // Surebets
   const SB=LAST.SB.filter(s=>new Date(s.start)>jetzt).sort((a,b)=>b.gewinn-a.gewinn);
   $('sureArea').innerHTML=SB.length?`<div class="card" style="--k:var(--v)"><h2>💎 Sicherer Gewinn (Surebet)</h2>`+
@@ -514,7 +532,7 @@ function renderTips(){
     ${s.beine.map(b=>`<div class="top" style="margin-top:5px"><div>${esc(b.s)} @ <b>${f2(b.q)}</b> <span class="mut">${esc(b.b)}</span></div><b>${eur(G*b.anteil)}</b></div>`).join('')}
     <div class="mut" style="margin-top:4px">Alle Beine setzen = ${eur(G*s.gewinn)} sicher. Quoten sofort prüfen – verschwinden schnell.</div></div>`}).join('')+'</div>':'';
   // Beobachten
-  const watch=alle.filter(o=>!TIPS.includes(o)&&o.edge>-0.015).sort((a,b)=>b.edge-a.edge).slice(0,5);
+  const watch=alle.filter(o=>!TIPS.includes(o)&&o.edge>-0.015&&o.edge<S.minEdge/100&&o.p>=S.minP).sort((a,b)=>b.edge-a.edge).slice(0,5);
   $('watchArea').innerHTML=watch.length?`<div class="card" style="--k:var(--m)"><h2 style="color:var(--m)">👀 Beobachten <span class="mut" style="font-weight:500">knapp kein Value</span></h2>`+
     watch.map(o=>`<div class="watch"><div><b>${esc(o.auswahl)}</b> @ ${f2(o.quote)} <span class="mut">${esc(o.buch)}</span><div class="mut">${esc(o.spiel)} · ${zeit(o.start)} · fair ${f2(o.fq)}</div></div>
      <span class="badge ${o.edge>0?'ba':'br'}">${o.edge>0?'+':''}${pct(o.edge)}</span></div>`).join('')+
@@ -529,15 +547,18 @@ const tk=o=>`${o.id}|${o.markt}|${o.auswahl}`;
 function updHeader(){const c=$('hdrC');if(CREDITS&&S.key){c.style.display='';c.textContent=CREDITS.rest+' Credits'}else c.style.display='none'}
 function toast(t){msg('tipsMsg',t,'ok');setTimeout(()=>msg('tipsMsg',''),2500)}
 
+function initSeg(){document.querySelectorAll('#pSeg button').forEach(b=>{b.classList.toggle('on',+b.dataset.p===S.minP);
+  b.onclick=()=>{S.minP=+b.dataset.p;saveS();initSeg();renderTips()}})}
 /* ═════════ Demo ═════════ */
 function demo(){
   const now=new Date(),teams=[['Bayern München','Borussia Dortmund'],['RB Leipzig','Bayer Leverkusen'],['VfB Stuttgart','Eintracht Frankfurt'],['SC Freiburg','Werder Bremen'],['1. FC Köln','Hamburger SV'],['Union Berlin','VfL Wolfsburg'],['Arsenal','Chelsea'],['Liverpool','Man City']];
   const bm=[['pinnacle','Pinnacle',.025,.004],['tipico_de','Tipico (DE)',.07,.035],['winamax_de','Winamax (DE)',.06,.035],['betsson','Betsson',.06,.03],['williamhill','William Hill',.065,.03],['sport888','888sport',.07,.03],['unibet_nl','Unibet (NL)',.06,.03],['nordicbet','NordicBet',.065,.03]];
-  const ev=teams.map(([h,a],i)=>{const ph=.3+Math.random()*.3,pd=.22+Math.random()*.06,pa=1-ph-pd;
+  const ev=teams.map(([h,a],i)=>{const ph=[.68,.42,.55,.62,.35,.48,.58,.4][i]+Math.random()*.04,pd=Math.min(.27,(1-ph)*.55),pa=1-ph-pd,po=.45+Math.random()*.15;
     return{id:'demo'+i,sport_title:i>5?'Premier League (DEMO)':'Bundesliga (DEMO)',home_team:h,away_team:a,commence_time:new Date(+now+(2+i*7)*3600e3).toISOString(),
       bookmakers:bm.map(([k,t,m,r])=>({key:k,title:t,markets:[
         {key:'h2h',outcomes:[[h,ph],['Draw',pd],[a,pa]].map(([n,p])=>{let q=1/(p*(1+m))*(1+(Math.random()*2-1)*r);
-          if(k==='winamax_de'&&(i===1||i===4)&&n===a)q=1/p*1.06;if(k==='tipico_de'&&i===0&&n===h)q=1/p*1.08;if(k==='betsson'&&i===6&&n==='Draw')q=1/p*1.035;return{name:n,price:+q.toFixed(2)}})}]}))}});
+          if(k==='winamax_de'&&(i===1||i===4)&&n===a)q=1/p*1.06;if(k==='tipico_de'&&i===0&&n===h)q=1/p*1.04;if(k==='betsson'&&i===6&&n==='Draw')q=1/p*1.035;if(k==='sport888'&&i===3&&n===h)q=1/p*1.03;return{name:n,price:+q.toFixed(2)}})},
+        {key:'totals',outcomes:[['Over',po],['Under',1-po]].map(([n,p])=>{let q=1/(p*(1+m))*(1+(Math.random()*2-1)*r);if(k==='williamhill'&&i===2&&n==='Over')q=1/p*1.045;return{name:n,point:2.5,price:+q.toFixed(2)}})}]}))}});
   const SNAP={},NEW={};SNAP['demo0|h2h||Bayern München']=[0.40,Date.now()-36e5];
   const a=analysiere(ev,'soccer_demo',now,SNAP,NEW);
   LAST={...a,ligen:['demo'],kosten:0,zeit:now.toISOString(),demo:true};location.hash='tips';show('tips');renderTips();
@@ -645,9 +666,11 @@ function setRisk(r){S.risk=r;Object.assign(S,{kelly:RISK[r].kelly,minScore:RISK[
   document.querySelectorAll('#riskSeg button').forEach(b=>b.classList.toggle('on',b.dataset.r===r));$('riskNote').textContent=RISK[r].txt;
   $('o_minScore').value=S.minScore;$('o_maxBet').value=S.maxBet;saveS()}
 document.querySelectorAll('#riskSeg button').forEach(b=>b.onclick=()=>setRisk(b.dataset.r));
-const MAP={bank:'o_bank',lim:'o_lim',autoN:'o_autoN',minEdge:'o_minEdge',maxEdge:'o_maxEdge',minQ:'o_minQ',maxQ:'o_maxQ',maxBet:'o_maxBet',tax:'o_tax',hours:'o_hours',minScore:'o_minScore',res:'o_res'};
+const MAP={fix:'o_fix',bank:'o_bank',lim:'o_lim',autoN:'o_autoN',minEdge:'o_minEdge',maxEdge:'o_maxEdge',minQ:'o_minQ',maxQ:'o_maxQ',maxBet:'o_maxBet',tax:'o_tax',hours:'o_hours',minScore:'o_minScore',res:'o_res'};
 function initSetup(){
   $('sKey').value=S.key;for(const[k,id]of Object.entries(MAP))$(id).value=S[k];
+  $(S.stakeMode==='fix'?'smF':'smK').checked=true;
+  document.querySelectorAll('[name=sm]').forEach(r=>r.onchange=()=>{S.stakeMode=r.value;saveS()});
   $('o_auto').value=String(S.auto);$('o_live').checked=S.live;$('o_mk').value=S.markets.join(',');$('o_all').checked=S.allBooks;
   document.querySelectorAll('#riskSeg button').forEach(b=>b.classList.toggle('on',b.dataset.r===S.risk));$('riskNote').textContent=RISK[S.risk].txt;
   $('sBooks').innerHTML=BOOKS.map(([k,n])=>`<label class="chk"><input type="checkbox" data-bk="${k}" ${S.books.includes(k)?'checked':''}> ${n}</label>`).join('');
@@ -680,7 +703,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
 setInterval(tick,60e3);
 
 /* ═════════ Start ═════════ */
-show(location.hash.slice(1));initSetup();calcValue();calcM();calcP();calcE();renderT();renderTips();
+show(location.hash.slice(1));initSeg();initSetup();calcValue();calcM();calcP();calcE();renderT();renderTips();
 setTimeout(tick,300);
 </script>
 </body>
