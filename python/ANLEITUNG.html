@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WettBot – Anleitung</title>
+<style>
+:root{--bg:#0d1117;--card:#161b22;--line:#2a3340;--t:#e6edf3;--m:#8b98a8;--g:#3fd47a;--r:#ff5c6c;--a:#ffb84d;--v:#b48cff;--b:#4ea1ff;--c:#3cd0d6}
+body{margin:0 auto;max-width:820px;background:var(--bg);color:var(--t);font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif;padding:16px}
+h1{font-size:22px;margin:0 0 4px}.sub{color:var(--m);margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--k);border-radius:12px;padding:14px;margin-bottom:12px}
+.card h2{margin:0 0 8px;font-size:16px;color:var(--k)}
+code,.chip{font-family:ui-monospace,Consolas,monospace;font-size:13px;background:#0f1520;border:1px solid var(--line);color:var(--c);padding:2px 7px;border-radius:6px}
+pre{background:#0f1520;border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--c);overflow-x:auto;font-size:13px}
+ol,ul{margin:4px 0;padding-left:20px}li{margin:3px 0}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-weight:700;font-size:12px}
+.bg{background:rgba(63,212,122,.15);color:var(--g);border:1px solid var(--g)}.bv{background:rgba(180,140,255,.15);color:var(--v);border:1px solid var(--v)}.br{background:rgba(255,92,108,.15);color:var(--r);border:1px solid var(--r)}
+table{border-collapse:collapse;width:100%;font-size:14px}td{padding:5px 4px;border-bottom:1px solid var(--line)}
+.m{color:var(--m);font-size:13px}
+</style></head><body>
+<h1>⚡ WettBot – Anleitung</h1>
+<div class="sub">Live-Quoten-Scanner · Value Bets · Surebets · Telegram-Alarm</div>
+
+<div class="card" style="--k:var(--b)"><h2>1 · Python installieren</h2>
+<ul><li>Windows: <code>python.org/downloads</code> → bei Installation <b>„Add Python to PATH“</b> anhaken</li>
+<li>Keine weiteren Pakete nötig</li>
+<li>Mac-Fehler „SSL certificate“: einmal <code>Install Certificates.command</code> im Python-Ordner starten</li></ul></div>
+
+<div class="card" style="--k:var(--v)"><h2>2 · Demo testen (ohne Key)</h2>
+<pre>python wettbot.py --demo</pre>
+<div class="m">Windows: Ordner öffnen → in Adresszeile <code>cmd</code> → Enter. Öffnet <code>bericht.html</code> mit Fantasie-Quoten.</div></div>
+
+<div class="card" style="--k:var(--g)"><h2>3 · Live-Quoten freischalten</h2>
+<ol><li><code>the-odds-api.com</code> → kostenlosen Plan wählen → Key kommt per Mail</li>
+<li><code>config.env</code> mit Editor öffnen → <code>ODDS_API_KEY=dein_key</code></li>
+<li>Start: <code>python wettbot.py</code> oder Doppelklick auf <code>start_windows.bat</code></li></ol>
+<div class="m">Gratis: 500 Credits/Monat. 1 Liga × 1 Markt = 1 Credit pro Scan. Der Bot teilt die Credits automatisch bis Monatsende ein (Standard: 3 Ligen ≈ alle 4–5 Std.).</div></div>
+
+<div class="card" style="--k:var(--c)"><h2>4 · Telegram aufs Handy (optional)</h2>
+<ol><li>Telegram → <code>@BotFather</code> → <code>/newbot</code> → Namen wählen → <b>Token</b> kopieren</li>
+<li>Deinem neuen Bot irgendeine Nachricht schreiben</li>
+<li>Im Browser: <code>api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> → Zahl bei <code>"chat":{"id":</code> = <b>Chat-ID</b></li>
+<li>Beides in <code>config.env</code> eintragen → testen: <code>python wettbot.py --telegram-test</code></li></ol></div>
+
+<div class="card" style="--k:var(--a)"><h2>Befehle</h2><table>
+<tr><td><code>python wettbot.py</code></td><td>Dauerbetrieb</td></tr>
+<tr><td><code>--einmal</code></td><td>ein Scan</td></tr>
+<tr><td><code>--demo</code></td><td>Test ohne Key</td></tr>
+<tr><td><code>--sportarten</code></td><td>aktive Ligen + Keys (0 Credits)</td></tr>
+<tr><td><code>--telegram-test</code></td><td>Testnachricht</td></tr></table>
+<div class="m" style="margin-top:6px">Beispiel-Keys: <code>soccer_germany_bundesliga</code> <code>soccer_germany_bundesliga2</code> <code>soccer_epl</code> <code>basketball_nba</code> <code>icehockey_nhl</code> <code>tennis_atp</code> (Präfix = alle ATP-Turniere)</div></div>
+
+<div class="card" style="--k:var(--g)"><h2>So rechnet der Bot</h2>
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+<span class="chip">p_fair = (1/Q_Pinnacle) / Σ(1/Q)</span><span class="chip">Value = p_fair · Q_dein − 1</span>
+<span class="chip">Kelly = (p·Q − 1)/(Q − 1)</span><span class="chip">Surebet: Σ(1/Q_beste) &lt; 1</span></div>
+<ul><li><span class="badge bg">VALUE</span> Dein Buchmacher zahlt mehr als die faire Quote (Pinnacle ohne Marge bzw. Konsens)</li>
+<li><span class="badge bv">SUREBET</span> Beste Quoten verschiedener Buchmacher ergeben sicheren Gewinn</li>
+<li>Jede Value-Meldung landet in <code>signale.csv</code> (Excel) → Spalte „Ergebnis“ selbst ausfüllen</li></ul></div>
+
+<div class="card" style="--k:var(--r)"><h2>Ehrlich & wichtig</h2>
+<ul><li>Bot <b>meldet</b> nur – Wetten gibst du selbst ab (automatisches Wetten verstößt gegen AGB der Buchmacher)</li>
+<li>Value-Wetten lohnen sich erst über <b>hunderte Wetten</b>; Verlustphasen sind normal</li>
+<li>Buchmacher limitieren Gewinner-Konten → Surebets fallen schnell auf</li>
+<li>Quote vor Abgabe immer prüfen – sie kann sich seit dem Scan geändert haben</li>
+<li>Nur Anbieter auf der <b>GGL-Whitelist</b> (deutsche Lizenz) · nur Geld, dessen Verlust okay ist</li>
+<li>Hilfe: <code>check-dein-spiel.de</code> · <code>0800 1 37 27 00</code> (kostenlos)</li></ul></div>
+</body></html>

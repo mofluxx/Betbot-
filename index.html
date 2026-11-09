@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WettBot">
+<title>WettBot</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230d1117'/%3E%3Ctext x='50' y='70' font-size='60' text-anchor='middle'%3E⚡%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--c2:#1c232d;--line:#2a3340;--t:#e6edf3;--m:#8b98a8;
+--g:#3fd47a;--r:#ff5c6c;--a:#ffb84d;--v:#b48cff;--b:#4ea1ff;--c:#3cd0d6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--t);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+padding:calc(10px + env(safe-area-inset-top)) 12px calc(84px + env(safe-area-inset-bottom));max-width:760px;margin:auto}
+h1{font-size:19px;margin:2px 0 10px;display:flex;justify-content:space-between;align-items:center}
+h1 small{font-size:12px;color:var(--m);font-weight:500}
+nav{position:fixed;left:0;right:0;bottom:0;background:rgba(13,17,23,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);
+display:flex;padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:20}
+nav button{flex:1;background:none;border:0;color:var(--m);font-size:11px;font-weight:600;padding:4px 0;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button span{font-size:20px}nav button.on{color:var(--k)}
+.view{display:none}.view.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--k,var(--b));border-radius:12px;padding:13px;margin-bottom:11px}
+.card h2{font-size:15px;margin:0 0 9px;color:var(--k,var(--b));display:flex;justify-content:space-between;align-items:center;gap:8px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.full{grid-column:1/-1}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+label{display:block;font-size:12px;color:var(--m);margin-bottom:3px}
+input,select{width:100%;background:var(--c2);color:var(--t);border:1px solid var(--line);border-radius:8px;padding:9px;font-size:16px}
+input:focus,select:focus{outline:none;border-color:var(--k,var(--b))}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--g);flex:none}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;padding:5px 0;color:var(--t)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+.chip{font:12px ui-monospace,Menlo,Consolas,monospace;background:#0f1520;border:1px solid var(--line);color:var(--c);padding:3px 8px;border-radius:999px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{background:var(--c2);border-radius:10px;padding:8px 10px}
+.kpi .k{font-size:11px;color:var(--m);text-transform:uppercase;letter-spacing:.03em}.kpi .v{font-size:19px;font-weight:700}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:700;font-size:12px;white-space:nowrap}
+.bg{background:rgba(63,212,122,.15);color:var(--g);border:1px solid var(--g)}
+.br{background:rgba(255,92,108,.15);color:var(--r);border:1px solid var(--r)}
+.ba{background:rgba(255,184,77,.15);color:var(--a);border:1px solid var(--a)}
+.bv{background:rgba(180,140,255,.15);color:var(--v);border:1px solid var(--v)}
+.btn{background:var(--k,var(--b));color:#08111c;border:0;border-radius:10px;padding:11px 14px;font-weight:700;font-size:15px;width:100%;margin-top:10px}
+.btn.ghost{background:transparent;color:var(--k,var(--b));border:1px solid var(--k,var(--b))}
+.btn:disabled{opacity:.5}
+.btn.sm{width:auto;padding:6px 10px;font-size:13px;margin:0}
+.row{display:flex;gap:8px}
+.seg{display:flex;gap:6px;margin-bottom:10px}
+.seg button{flex:1;background:var(--c2);color:var(--m);border:1px solid var(--line);border-radius:8px;padding:8px;font-weight:600;font-size:14px}
+.seg button.on{color:var(--t);border-color:var(--k)}
+.item{background:var(--c2);border-radius:10px;padding:10px;margin-top:8px}
+.item .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.item .t{font-weight:700}.mut{color:var(--m);font-size:12px}
+.big{font-size:18px;font-weight:800}
+.g{color:var(--g)}.r{color:var(--r)}.a{color:var(--a)}.vi{color:var(--v)}
+.bar{height:7px;border-radius:4px;background:var(--c2);overflow:hidden;margin-top:4px}.bar i{display:block;height:100%}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--m);font-size:11px;text-transform:uppercase}
+.odds{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:6px;margin-top:6px}
+.odd{background:var(--bg);border-radius:8px;padding:6px;text-align:center}
+.odd b{display:block;font-size:16px}.odd.hit b{color:var(--g)}
+.note{font-size:12px;color:var(--m);margin-top:8px}
+.hidden{display:none!important}
+.msg{padding:9px 11px;border-radius:9px;margin-bottom:10px;font-size:14px}
+.msg.err{background:rgba(255,92,108,.12);border:1px solid var(--r);color:#ffb3bb}
+.msg.ok{background:rgba(63,212,122,.12);border:1px solid var(--g);color:#b5f5cf}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #08111c;border-top-color:transparent;border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes s{to{transform:rotate(360deg)}}
+.grp{font-size:12px;color:var(--m);text-transform:uppercase;margin:10px 0 2px}
+.scroll{max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:4px 10px}
+a{color:var(--b)}
+</style>
+</head>
+<body>
+<h1>⚡ WettBot <small id="hdr"></small></h1>
+
+<!-- ═════════ LIVE ═════════ -->
+<section class="view" id="v-live">
+  <div id="liveMsg"></div>
+  <div class="card" style="--k:var(--b)">
+    <div class="kpis">
+      <div class="kpi"><div class="k">Value Bets</div><div class="v g" id="kV">–</div></div>
+      <div class="kpi"><div class="k">Surebets</div><div class="v vi" id="kS">–</div></div>
+      <div class="kpi"><div class="k">API-Credits übrig</div><div class="v" id="kC">–</div></div>
+      <div class="kpi"><div class="k">Letzter Scan</div><div class="v" id="kT" style="font-size:15px">–</div></div>
+    </div>
+    <button class="btn" id="scanBtn" style="--k:var(--g)">🔄 Live scannen</button>
+    <div class="row"><button class="btn ghost" id="demoBtn" style="--k:var(--v)">🧪 Demo</button>
+      <button class="btn ghost" id="toSetup" style="--k:var(--m)">⚙️ Setup</button></div>
+    <div class="note" id="costNote"></div>
+  </div>
+
+  <div class="card" style="--k:var(--g)">
+    <h2>🟢 Value Bets</h2>
+    <div class="chips"><span class="chip">p_fair = (1/Q_sharp) / Σ(1/Q)</span><span class="chip">Value = p·Q − 1</span></div>
+    <div id="lV"><div class="note">Noch kein Scan.</div></div>
+  </div>
+  <div class="card" style="--k:var(--v)">
+    <h2>💎 Surebets <span class="row" style="align-items:center;gap:6px;font-size:12px;color:var(--m);font-weight:500">Gesamteinsatz <input id="sbStake" type="number" value="100" style="width:72px;padding:5px;font-size:14px"> €</span></h2>
+    <div class="chips"><span class="chip">Σ(1/Q_beste) &lt; 1</span><span class="chip">Einsatz_i = G · (1/Q_i)/Σ</span></div>
+    <div id="lS"><div class="note">Noch kein Scan.</div></div>
+  </div>
+  <div class="card" style="--k:var(--c)">
+    <h2>📋 Quoten-Vergleich</h2>
+    <div class="note" style="margin-top:-4px">Beste Quote je Ausgang · <span class="g">grün</span> = über fairer Quote</div>
+    <div id="lT"></div>
+  </div>
+</section>
+
+<!-- ═════════ RECHNER ═════════ -->
+<section class="view" id="v-calc">
+  <div class="card" style="--k:var(--g)">
+    <h2>Value-Bet-Check</h2>
+    <div class="grid">
+      <div><label>Quote</label><input id="vOdds" type="number" step="0.01" value="2.10" inputmode="decimal"></div>
+      <div><label>Deine Wahrsch. %</label><input id="vProb" type="number" step="0.1" value="52" inputmode="decimal"></div>
+    </div>
+    <div class="chips"><span class="chip">p_impl = 1/Q</span><span class="chip">EV = p·Q − 1</span><span class="chip">Kelly = (p·Q−1)/(Q−1)</span></div>
+    <div class="kpis" style="margin-top:10px">
+      <div class="kpi"><div class="k">Impl. Wahrsch.</div><div class="v" id="cImp">–</div></div>
+      <div class="kpi"><div class="k">Faire Quote</div><div class="v" id="cFair">–</div></div>
+      <div class="kpi"><div class="k">Value</div><div class="v" id="cEv">–</div></div>
+      <div class="kpi"><div class="k">Einsatz</div><div class="v" id="cStake">–</div></div>
+    </div>
+    <div id="cBadge" style="margin-top:10px"></div>
+    <div class="note">Bankroll, Kelly-Anteil & Steuer aus dem Setup.</div>
+  </div>
+  <div class="card" style="--k:var(--c)">
+    <h2>Buchmacher-Marge</h2>
+    <div class="seg" style="--k:var(--c)"><button id="m2" class="on">2-Weg</button><button id="m3">3-Weg (1X2)</button></div>
+    <div class="grid3">
+      <div><label>Quote 1</label><input id="mA" type="number" step="0.01" value="1.90" inputmode="decimal"></div>
+      <div id="mXw" class="hidden"><label>Quote X</label><input id="mX" type="number" step="0.01" value="3.50" inputmode="decimal"></div>
+      <div><label>Quote 2</label><input id="mB" type="number" step="0.01" value="1.95" inputmode="decimal"></div>
+    </div>
+    <div class="chips"><span class="chip">Marge = Σ(1/Q) − 1</span><span class="chip">p_fair = (1/Q)/Σ</span></div>
+    <div class="kpis" id="mOut" style="margin-top:10px"></div>
+  </div>
+</section>
+
+<!-- ═════════ PROGNOSE ═════════ -->
+<section class="view" id="v-model">
+  <div class="seg" style="--k:var(--v)"><button id="pP" class="on">⚽ Poisson</button><button id="pE">🎾 Elo</button></div>
+  <div id="poisson">
+    <div class="card" style="--k:var(--v)">
+      <h2>Poisson-Modell (Tore)</h2>
+      <div class="note" style="margin:-6px 0 8px">Schnitt pro Spiel, letzte 10–20 Spiele</div>
+      <div class="grid">
+        <div><label>Heim: geschossen</label><input id="hS" type="number" step="0.01" value="1.80" inputmode="decimal"></div>
+        <div><label>Heim: kassiert</label><input id="hC" type="number" step="0.01" value="1.10" inputmode="decimal"></div>
+        <div><label>Gast: geschossen</label><input id="aS" type="number" step="0.01" value="1.30" inputmode="decimal"></div>
+        <div><label>Gast: kassiert</label><input id="aC" type="number" step="0.01" value="1.50" inputmode="decimal"></div>
+        <div><label>Liga-Ø Tore/Team</label><input id="lg" type="number" step="0.01" value="1.45" inputmode="decimal"></div>
+        <div><label>Über/Unter-Linie</label><select id="ou"><option>0.5</option><option>1.5</option><option selected>2.5</option><option>3.5</option><option>4.5</option></select></div>
+      </div>
+      <div class="chips"><span class="chip">λ_H = (H_sch/Ø)·(G_kas/Ø)·Ø</span><span class="chip">P(k) = λᵏe^−λ/k!</span></div>
+      <div class="kpis" id="pRes" style="margin-top:10px"></div>
+    </div>
+    <div class="card" style="--k:var(--b)"><h2>Märkte & faire Quoten</h2><table id="pTbl"></table>
+      <div class="note">Zeile antippen → Value-Rechner</div></div>
+    <div class="card" style="--k:var(--c)"><h2>Wahrscheinlichste Ergebnisse</h2><div id="pTop"></div></div>
+  </div>
+  <div id="elo" class="hidden">
+    <div class="card" style="--k:var(--v)">
+      <h2>Elo-Modell (Sieger)</h2>
+      <div class="grid">
+        <div><label>Elo A</label><input id="eA" type="number" value="1850" inputmode="numeric"></div>
+        <div><label>Elo B</label><input id="eB" type="number" value="1760" inputmode="numeric"></div>
+        <div><label>Heimvorteil A</label><input id="eH" type="number" value="0" inputmode="numeric"></div>
+        <div><label>Quote A</label><input id="eQ" type="number" step="0.01" value="1.55" inputmode="decimal"></div>
+      </div>
+      <div class="chips"><span class="chip">P(A) = 1/(1+10^((B−A−H)/400))</span></div>
+      <div class="kpis" id="eRes" style="margin-top:10px"></div>
+      <div id="eBadge" style="margin-top:10px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ TRACKER ═════════ -->
+<section class="view" id="v-track">
+  <div class="card" style="--k:var(--a)"><h2>Übersicht</h2><div class="kpis" id="tStats"></div><div id="tLimit"></div></div>
+  <div class="card" style="--k:var(--b)">
+    <h2>Neue Wette</h2>
+    <div class="grid">
+      <div class="full"><label>Spiel</label><input id="nEv" placeholder="BVB – Leipzig"></div>
+      <div><label>Tipp</label><input id="nTip" placeholder="Über 2.5"></div>
+      <div><label>Buchmacher</label><input id="nBk" placeholder="Tipico"></div>
+      <div><label>Quote</label><input id="nQ" type="number" step="0.01" inputmode="decimal"></div>
+      <div><label>Einsatz €</label><input id="nS" type="number" step="0.5" inputmode="decimal"></div>
+    </div>
+    <button class="btn" id="nAdd">+ Speichern</button>
+  </div>
+  <div class="card" style="--k:var(--a)">
+    <h2>Meine Wetten</h2><div id="tList"></div>
+    <div class="row"><button class="btn ghost" id="tCsv" style="--k:var(--a)">CSV kopieren</button><button class="btn ghost" id="tClr" style="--k:var(--r)">Alle löschen</button></div>
+    <div class="note" id="tMsg"></div>
+  </div>
+</section>
+
+<!-- ═════════ SETUP ═════════ -->
+<section class="view" id="v-setup">
+  <div id="setMsg"></div>
+  <div class="card" style="--k:var(--g)">
+    <h2>🔑 API-Key</h2>
+    <input id="sKey" type="password" placeholder="Key von the-odds-api.com" autocomplete="off">
+    <div class="note">Kostenlos: <a href="https://the-odds-api.com" target="_blank" rel="noopener">the-odds-api.com</a> → Free Plan (500 Credits/Monat). Der Key bleibt nur auf diesem Gerät gespeichert.</div>
+    <button class="btn" id="sTest" style="--k:var(--g)">Speichern & Ligen laden (0 Credits)</button>
+  </div>
+  <div class="card" style="--k:var(--b)">
+    <h2>🏟 Ligen <span class="mut" id="sCnt"></span></h2>
+    <input id="sFilter" placeholder="Suchen … z. B. Bundesliga, NBA, ATP">
+    <div class="scroll" id="sList" style="margin-top:8px"><div class="note">Erst Key speichern.</div></div>
+    <div class="note">Jede Liga kostet pro Scan: Märkte × 1 Credit.</div>
+  </div>
+  <div class="card" style="--k:var(--c)">
+    <h2>📈 Märkte</h2>
+    <label class="chk"><input type="checkbox" id="mk_h2h" checked> Sieger / 1X2</label>
+    <label class="chk"><input type="checkbox" id="mk_totals"> Über / Unter</label>
+  </div>
+  <div class="card" style="--k:var(--a)">
+    <h2>🏦 Meine Buchmacher</h2>
+    <div class="note" style="margin:-6px 0 4px">Hier suchst du Value. Nur deutsche Lizenz (GGL-Whitelist)!</div>
+    <div id="sBooks"></div>
+  </div>
+  <div class="card" style="--k:var(--v)">
+    <h2>🎯 Filter & Einsatz</h2>
+    <div class="grid">
+      <div><label>Min. Value %</label><input id="o_minEdge" type="number" step="0.5" inputmode="decimal"></div>
+      <div><label>Max. Value %</label><input id="o_maxEdge" type="number" step="1" inputmode="decimal"></div>
+      <div><label>Min. Quote</label><input id="o_minQ" type="number" step="0.05" inputmode="decimal"></div>
+      <div><label>Max. Quote</label><input id="o_maxQ" type="number" step="0.5" inputmode="decimal"></div>
+      <div><label>Bankroll €</label><input id="o_bank" type="number" inputmode="decimal"></div>
+      <div><label>Kelly-Anteil</label><select id="o_kelly"><option value="0.25">¼ (empfohlen)</option><option value="0.5">½</option><option value="1">voll</option></select></div>
+      <div><label>Max. Einsatz % Bankroll</label><input id="o_maxBet" type="number" step="0.5" inputmode="decimal"></div>
+      <div><label>Wettsteuer %</label><input id="o_tax" type="number" step="1" inputmode="decimal"></div>
+      <div><label>Spiele in nächsten … Std.</label><input id="o_hours" type="number" inputmode="numeric"></div>
+      <div><label>Monatl. Verlustlimit €</label><input id="o_lim" type="number" inputmode="decimal"></div>
+    </div>
+    <label class="chk" style="margin-top:8px"><input type="checkbox" id="o_live"> Laufende Spiele mitscannen</label>
+    <button class="btn" id="sSave" style="--k:var(--v)">Speichern</button>
+  </div>
+  <div class="note">Hilfe bei Spielproblemen: check-dein-spiel.de · 0800 1 37 27 00 (kostenlos)</div>
+</section>
+
+<nav>
+  <button data-v="live" style="--k:var(--g)"><span>📡</span>Live</button>
+  <button data-v="calc" style="--k:var(--c)"><span>🧮</span>Rechner</button>
+  <button data-v="model" style="--k:var(--v)"><span>📊</span>Prognose</button>
+  <button data-v="track" style="--k:var(--a)"><span>📒</span>Tracker</button>
+  <button data-v="setup" style="--k:var(--b)"><span>⚙️</span>Setup</button>
+</nav>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const nv=id=>parseFloat(String($(id).value).replace(',','.'));
+const pct=(x,d=1)=>(x*100).toFixed(d).replace('.',',')+' %';
+const f2=x=>x.toFixed(2);
+const eur=x=>(x<0?'−':'')+Math.abs(x).toFixed(2).replace('.',',')+' €';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+             set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const API='https://api.the-odds-api.com/v4';
+const SHARP='pinnacle';
+const BOERSEN=new Set(['betfair_ex_eu','betfair_ex_uk','matchbook','smarkets']);
+const BOOKS=[['tipico_de','Tipico (DE)'],['winamax_de','Winamax (DE)'],['williamhill','William Hill'],['betsson','Betsson'],
+ ['sport888','888sport'],['betvictor','Bet Victor'],['nordicbet','NordicBet'],['unibet_nl','Unibet (NL)'],['unibet_se','Unibet (SE)'],
+ ['leovegas_se','LeoVegas (SE)'],['coolbet','Coolbet'],['marathonbet','Marathon Bet'],['onexbet','1xBet']];
+const NAMEN={Draw:'Unentschieden',Over:'Über',Under:'Unter'};
+const ICON={soccer:'⚽',basketball:'🏀',tennis:'🎾',icehockey:'🏒',americanfootball:'🏈',baseball:'⚾',mma:'🥊',boxing:'🥊',darts:'🎯',cricket:'🏏',rugbyleague:'🏉',rugbyunion:'🏉',handball:'🤾',aussierules:'🏉',golf:'⛳'};
+const icon=k=>ICON[String(k).split('_')[0]]||'🏟';
+const WT=['So','Mo','Di','Mi','Do','Fr','Sa'];
+const zeit=d=>`${WT[d.getDay()]} ${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}. ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+/* ───── Einstellungen ───── */
+const DEF={key:'',sports:['soccer_germany_bundesliga','soccer_epl'],markets:['h2h'],books:['tipico_de','winamax_de'],
+  minEdge:3,maxEdge:25,minQ:1.3,maxQ:6,bank:200,kelly:0.25,maxBet:3,tax:0,hours:48,lim:50,live:false};
+let S=Object.assign({},DEF,store.get('wb2_set',{}));
+const saveS=()=>store.set('wb2_set',S);
+
+/* ───── Navigation ───── */
+const VIEWS=['live','calc','model','track','setup'];
+function show(v){if(!VIEWS.includes(v))v='live';
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  VIEWS.forEach(x=>$('v-'+x).classList.toggle('on',x===v));window.scrollTo(0,0)}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{location.hash=b.dataset.v;show(b.dataset.v)});
+window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
+$('toSetup').onclick=()=>{location.hash='setup';show('setup')};
+
+/* ───── Mathe ───── */
+function ohneMarge(q){const inv=q.map(x=>1/x),s=inv.reduce((a,b)=>a+b,0);return inv.map(x=>x/s)}
+function kelly(p,q){const k=(p*q-1)/(q-1);const a=Math.max(0,Math.min(k*S.kelly,S.maxBet/100));return{einsatz:Math.round(a*S.bank*2)/2,anteil:a}}
+
+/* ───── API ───── */
+async function api(path,params){
+  const url=API+path+'?'+new URLSearchParams(params);
+  let r;
+  try{r=await fetch(url)}catch(e){
+    throw new Error(location.protocol==='file:'?'Als Datei geöffnet funktioniert der Abruf nicht – Seite muss über https:// laufen (siehe Anleitung).':'Keine Verbindung zur Quoten-API.')}
+  const rest=r.headers.get('x-requests-remaining');
+  if(!r.ok){const t=await r.text();
+    if(r.status===401)throw new Error(/OUT_OF_USAGE|quota/i.test(t)?'Monats-Credits aufgebraucht (Reset am 1.).':'API-Key ungültig.');
+    if(r.status===429)throw new Error('Zu viele Anfragen – kurz warten.');
+    throw new Error('Fehler '+r.status+': '+t.slice(0,140))}
+  return{data:await r.json(),rest};
+}
+
+/* ───── Analyse ───── */
+function gruppen(ev,markt,now){
+  const g={};
+  for(const b of ev.bookmakers||[]){
+    if(b.last_update&&(now-new Date(b.last_update))>30*60e3)continue;
+    for(const m of b.markets||[]){ if(m.key!==markt)continue;
+      for(const o of m.outcomes){
+        const gid=markt==='totals'?String(o.point):'';
+        const sel=markt==='totals'?`${NAMEN[o.name]||o.name} ${o.point}`:(NAMEN[o.name]||o.name);
+        ((g[gid]??={})[b.key]??={_t:b.title})[sel]=o.price;}}}
+  return g;
+}
+function analysiere(events,sportKey,title,now){
+  const V=[],SB=[],T=[];
+  for(const ev of events){
+    const start=new Date(ev.commence_time);
+    if(start<now&&!S.live)continue;
+    if(start-now>S.hours*3600e3)continue;
+    const base={id:ev.id,sport:sportKey,liga:ev.sport_title||title,spiel:`${ev.home_team} – ${ev.away_team}`,start,live:start<now};
+    for(const markt of S.markets){
+      for(const [gid,bk] of Object.entries(gruppen(ev,markt,now))){
+        let aus=[];for(const b of Object.values(bk))for(const s in b)if(s!=='_t'&&!aus.includes(s))aus.push(s);
+        if(markt==='h2h'){if(aus.length<2||aus.length>3)continue;
+          const i=aus.indexOf('Unentschieden');if(i>=0&&aus.length===3){aus.splice(i,1);aus.splice(1,0,'Unentschieden')}
+          const h=aus.indexOf(ev.home_team);if(h>0){aus.splice(h,1);aus.unshift(ev.home_team)}}
+        if(markt==='totals'){if(aus.length!==2)continue;aus.sort()}
+        const komp=Object.fromEntries(Object.entries(bk).filter(([,b])=>aus.every(s=>s in b)));
+        const keys=Object.keys(komp);if(!keys.length)continue;
+        let fair=null,quelle=null;
+        if(komp[SHARP]){fair=ohneMarge(aus.map(s=>komp[SHARP][s]));quelle='Pinnacle'}
+        else if(keys.length>=5){const sum=aus.map(()=>0);
+          for(const k of keys){ohneMarge(aus.map(s=>komp[k][s])).forEach((p,i)=>sum[i]+=p)}
+          fair=sum.map(x=>x/keys.length);quelle=`Konsens (${keys.length})`}
+        const pool=keys.filter(k=>!BOERSEN.has(k));const pl=pool.length?pool:keys;
+        const beste=aus.map(s=>{const k=pl.reduce((a,b)=>komp[b][s]>komp[a][s]?b:a);return{s,q:komp[k][s],b:komp[k]._t}});
+        const sum=beste.reduce((a,x)=>a+1/x.q,0);
+        if(sum<1)SB.push({...base,markt,gewinn:1/sum-1,beine:beste.map(x=>({...x,anteil:(1/x.q)/sum}))});
+        if(markt==='h2h')T.push({...base,aus:beste.map((x,i)=>({...x,fq:fair?1/fair[i]:null})),quelle,n:keys.length});
+        if(!fair)continue;
+        const ziele=S.books.length?S.books:keys.filter(k=>k!==SHARP&&!BOERSEN.has(k));
+        for(const zk of ziele){ if(!komp[zk]||zk===SHARP)continue;
+          aus.forEach((s,i)=>{const q=komp[zk][s],qe=q*(1-S.tax/100),p=fair[i],edge=p*qe-1;
+            if(q<S.minQ||q>S.maxQ)return;
+            if(edge>=S.minEdge/100&&edge<=S.maxEdge/100){const k=kelly(p,qe);
+              V.push({...base,markt,auswahl:s,quote:q,buch:komp[zk]._t,p,fq:1/p,edge,quelle,...k})}})}
+      }}}
+  return{V,SB,T};
+}
+
+/* ───── Scan ───── */
+let LAST=store.get('wb2_last',null);
+function kosten(){return S.sports.length*S.markets.length}
+function updCost(){
+  $('costNote').innerHTML=S.key?`${S.sports.length} Ligen × ${S.markets.length} Märkte = <b>${kosten()} Credits</b> pro Scan. Ergebnis bleibt gespeichert – erneut öffnen kostet nichts.`
+   :'⚠️ Noch kein API-Key → <b>Setup</b>. Oder erst die <b>Demo</b> testen.';
+  $('hdr').textContent=LAST?.rest!=null&&LAST.rest!=='DEMO'?LAST.rest+' Credits':'';
+}
+function msg(el,text,typ='err'){$(el).innerHTML=text?`<div class="msg ${typ}">${text}</div>`:''}
+async function scan(){
+  if(!S.key){msg('liveMsg','Kein API-Key. Bitte im Setup eintragen.');return}
+  if(!S.sports.length){msg('liveMsg','Keine Liga gewählt (Setup).');return}
+  const btn=$('scanBtn');btn.disabled=true;btn.innerHTML='<span class="spin"></span>Scanne …';msg('liveMsg','');
+  const now=new Date(),all={V:[],SB:[],T:[]};let rest=null,fehler=[];
+  for(const sp of S.sports){
+    try{const r=await api(`/sports/${sp}/odds`,{apiKey:S.key,regions:'eu',markets:S.markets.join(','),oddsFormat:'decimal'});
+      rest=r.rest??rest;const a=analysiere(r.data,sp,sp,now);all.V.push(...a.V);all.SB.push(...a.SB);all.T.push(...a.T);
+    }catch(e){fehler.push(`${sp}: ${e.message}`);if(/Key|Credits/.test(e.message))break}}
+  LAST={...all,rest,zeit:now.toISOString(),demo:false};store.set('wb2_last',LAST);
+  if(fehler.length)msg('liveMsg',esc(fehler.join(' · ')));
+  btn.disabled=false;btn.textContent='🔄 Live scannen';render();
+}
+$('scanBtn').onclick=scan;
+
+function demo(){
+  const now=new Date(),teams=[['Bayern München','Borussia Dortmund'],['RB Leipzig','Bayer Leverkusen'],['VfB Stuttgart','Eintracht Frankfurt'],['SC Freiburg','Werder Bremen'],['1. FC Köln','Hamburger SV'],['Union Berlin','VfL Wolfsburg']];
+  const bm=[['pinnacle','Pinnacle',.025,.005],['tipico_de','Tipico (DE)',.07,.04],['winamax_de','Winamax (DE)',.06,.04],['betsson','Betsson',.06,.03],['williamhill','William Hill',.065,.03],['sport888','888sport',.07,.03]];
+  const ev=teams.map(([h,a],i)=>{const ph=.3+Math.random()*.3,pd=.22+Math.random()*.06,pa=1-ph-pd;
+    return{id:'d'+i,sport_title:'Bundesliga (DEMO)',home_team:h,away_team:a,commence_time:new Date(+now+(3+i*5)*3600e3).toISOString(),
+      bookmakers:bm.map(([k,t,m,r])=>({key:k,title:t,last_update:now.toISOString(),markets:[
+        {key:'h2h',outcomes:[[h,ph],['Draw',pd],[a,pa]].map(([n,p])=>{let q=1/(p*(1+m))*(1+(Math.random()*2-1)*r);
+          if(k==='winamax_de'&&(i===1||i===4)&&n===a)q=1/p*1.07;if(k==='tipico_de'&&i===5&&n===h)q=1/p*1.12;return{name:n,price:+q.toFixed(2)}})},
+        {key:'totals',outcomes:[{name:'Over',point:2.5,price:k==='tipico_de'&&i===2?2.18:1.93},{name:'Under',point:2.5,price:1.92}]}]}))}});
+  const keep=S.markets;S.markets=['h2h','totals'];const a=analysiere(ev,'soccer_demo','Bundesliga (DEMO)',now);S.markets=keep;
+  LAST={...a,rest:'DEMO',zeit:now.toISOString(),demo:true};msg('liveMsg','🧪 Demo mit Fantasie-Quoten – nicht echt!','ok');render();
+}
+$('demoBtn').onclick=demo;
+
+/* ───── Render Live ───── */
+function render(){
+  updCost();
+  if(!LAST)return;
+  const L=LAST,re=x=>({...x,start:new Date(x.start)});
+  const V=L.V.map(re).sort((a,b)=>b.edge-a.edge),SB=L.SB.map(re).sort((a,b)=>b.gewinn-a.gewinn),T=L.T.map(re).sort((a,b)=>a.start-b.start);
+  $('kV').textContent=V.length;$('kS').textContent=SB.length;$('kC').textContent=L.rest??'?';
+  $('kT').textContent=zeit(new Date(L.zeit));
+  $('lV').innerHTML=V.length?V.map((v,i)=>`<div class="item">
+    <div class="top"><div><div class="t">${icon(v.sport)} ${esc(v.spiel)}</div><div class="mut">${esc(v.liga)} · ${zeit(v.start)}${v.live?' · <span class="r">LIVE</span>':''}</div></div>
+    <span class="badge ${v.edge>=.05?'bg':'ba'}">+${pct(v.edge)}</span></div>
+    <div style="margin-top:6px">Tipp <b>${esc(v.auswahl)}</b> @ <span class="big g">${f2(v.quote)}</span> <span class="mut">${esc(v.buch)}</span></div>
+    <div class="mut">Fair ${f2(v.fq)} · p ${pct(v.p)} · ${esc(v.quelle)}</div>
+    <div class="top" style="margin-top:6px;align-items:center"><div>Einsatz <b>${eur(v.einsatz)}</b> <span class="mut">(${pct(v.anteil)} Bankroll)</span></div>
+    <button class="btn sm" style="--k:var(--a)" data-add="${i}">+ Tracker</button></div></div>`).join('')
+    :`<div class="note">Keine Value Bets über ${S.minEdge} %. Völlig normal – echte Value Bets sind selten.</div>`;
+  $('lV').querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{const v=V[+b.dataset.add];
+    addBet({e:v.spiel,t:v.auswahl,bk:v.buch,q:v.quote,s:v.einsatz||1});b.textContent='✓ drin';b.disabled=true});
+  const G=nv('sbStake')||100;
+  $('lS').innerHTML=SB.length?SB.map(s=>`<div class="item">
+    <div class="top"><div><div class="t">${icon(s.sport)} ${esc(s.spiel)}</div><div class="mut">${esc(s.liga)} · ${zeit(s.start)}</div></div>
+    <span class="badge bv">+${pct(s.gewinn,2)}</span></div>
+    ${s.beine.map(b=>`<div class="top" style="margin-top:5px"><div>${esc(b.s)} @ <b>${f2(b.q)}</b> <span class="mut">${esc(b.b)}</span></div><b>${eur(G*b.anteil)}</b></div>`).join('')}
+    <div class="mut" style="margin-top:4px">Sicherer Gewinn ≈ ${eur(G*s.gewinn)} · Quoten vor Abgabe prüfen!</div></div>`).join('')
+    :'<div class="note">Keine Surebets gefunden.</div>';
+  $('lT').innerHTML=T.length?T.map(t=>`<div class="item"><div class="t">${icon(t.sport)} ${esc(t.spiel)}</div>
+    <div class="mut">${esc(t.liga)} · ${zeit(t.start)} · ${t.n} Buchmacher</div>
+    <div class="odds" style="--n:${t.aus.length}">${t.aus.map(a=>`<div class="odd ${a.fq&&a.q>a.fq?'hit':''}"><div class="mut">${esc(a.s.length>14?a.s.slice(0,13)+'…':a.s)}</div><b>${f2(a.q)}</b><div class="mut">${esc(a.b)}</div>${a.fq?`<div class="mut">fair ${f2(a.fq)}</div>`:''}</div>`).join('')}</div></div>`).join('')
+    :'<div class="note">Keine Spiele im Zeitfenster.</div>';
+}
+$('sbStake').addEventListener('input',render);
+
+/* ───── Setup ───── */
+let SPORTS=store.get('wb2_sports',[]);
+function renderSports(){
+  const f=$('sFilter').value.toLowerCase();
+  if(!SPORTS.length){$('sList').innerHTML='<div class="note">Erst Key speichern.</div>';return}
+  const groups={};SPORTS.filter(s=>!s.has_outrights&&(s.title+s.group+s.key+s.description).toLowerCase().includes(f)).forEach(s=>(groups[s.group]??=[]).push(s));
+  $('sList').innerHTML=Object.entries(groups).map(([g,l])=>`<div class="grp">${icon(l[0].key)} ${esc(g)}</div>`+
+    l.map(s=>`<label class="chk"><input type="checkbox" data-sp="${esc(s.key)}" ${S.sports.includes(s.key)?'checked':''}> ${esc(s.title)}</label>`).join('')).join('')||'<div class="note">Nichts gefunden.</div>';
+  $('sList').querySelectorAll('[data-sp]').forEach(c=>c.onchange=()=>{
+    S.sports=c.checked?[...new Set([...S.sports,c.dataset.sp])]:S.sports.filter(x=>x!==c.dataset.sp);saveS();cnt()});
+  cnt();
+}
+function cnt(){$('sCnt').textContent=`${S.sports.length} gewählt · ${kosten()} Credits/Scan`;updCost()}
+$('sFilter').addEventListener('input',renderSports);
+$('sTest').onclick=async()=>{
+  S.key=$('sKey').value.trim();saveS();if(!S.key){msg('setMsg','Bitte Key eingeben.');return}
+  const b=$('sTest');b.disabled=true;b.innerHTML='<span class="spin"></span>Prüfe …';
+  try{const r=await api('/sports/',{apiKey:S.key});SPORTS=r.data.filter(s=>s.active);store.set('wb2_sports',SPORTS);
+    S.sports=S.sports.filter(k=>SPORTS.some(s=>s.key===k));saveS();
+    msg('setMsg',`✓ Key funktioniert · ${SPORTS.length} aktive Ligen${r.rest?` · ${r.rest} Credits übrig`:''}`,'ok');renderSports()}
+  catch(e){msg('setMsg',esc(e.message))}
+  b.disabled=false;b.textContent='Speichern & Ligen laden (0 Credits)';
+};
+function initSetup(){
+  $('sKey').value=S.key;
+  $('sBooks').innerHTML=BOOKS.map(([k,n])=>`<label class="chk"><input type="checkbox" data-bk="${k}" ${S.books.includes(k)?'checked':''}> ${n}</label>`).join('');
+  $('sBooks').querySelectorAll('[data-bk]').forEach(c=>c.onchange=()=>{S.books=[...$('sBooks').querySelectorAll('[data-bk]:checked')].map(x=>x.dataset.bk);saveS()});
+  ['h2h','totals'].forEach(m=>{$('mk_'+m).checked=S.markets.includes(m);$('mk_'+m).onchange=()=>{
+    S.markets=['h2h','totals'].filter(x=>$('mk_'+x).checked);if(!S.markets.length){S.markets=['h2h'];$('mk_h2h').checked=true}saveS();cnt()}});
+  const map={minEdge:'o_minEdge',maxEdge:'o_maxEdge',minQ:'o_minQ',maxQ:'o_maxQ',bank:'o_bank',maxBet:'o_maxBet',tax:'o_tax',hours:'o_hours',lim:'o_lim'};
+  for(const[k,id]of Object.entries(map))$(id).value=S[k];
+  $('o_kelly').value=String(S.kelly);$('o_live').checked=S.live;
+  $('sSave').onclick=()=>{for(const[k,id]of Object.entries(map)){const x=nv(id);if(isFinite(x))S[k]=x}
+    S.kelly=parseFloat($('o_kelly').value);S.live=$('o_live').checked;saveS();calcValue();renderT();
+    msg('setMsg','✓ Gespeichert. Neue Filter gelten ab dem nächsten Scan.','ok');window.scrollTo(0,0)};
+  renderSports();
+}
+
+/* ───── Rechner ───── */
+function calcValue(){
+  const q=nv('vOdds')*(1-S.tax/100),p=nv('vProb')/100;
+  if(!(q>1&&p>0&&p<1)){$('cBadge').innerHTML='<span class="badge ba">Eingaben prüfen</span>';return}
+  const ev=p*q-1,k=kelly(p,q);
+  $('cImp').textContent=pct(1/q);$('cFair').textContent=f2(1/p);
+  $('cEv').innerHTML=`<span class="${ev>0?'g':'r'}">${ev>0?'+':''}${pct(ev)}</span>`;
+  $('cStake').textContent=ev>0?eur(k.einsatz):'0 €';
+  $('cBadge').innerHTML=ev>.03?'<span class="badge bg">✓ VALUE BET</span>':ev>0?'<span class="badge ba">≈ knapp – Schätzfehler?</span>':'<span class="badge br">✗ KEIN VALUE</span>';
+}
+['vOdds','vProb'].forEach(i=>$(i).addEventListener('input',calcValue));
+function toCalc(q,p){$('vOdds').value=q;$('vProb').value=(p*100).toFixed(1);calcValue();location.hash='calc';show('calc')}
+let three=false;
+$('m2').onclick=()=>{three=false;$('m2').classList.add('on');$('m3').classList.remove('on');$('mXw').classList.add('hidden');calcM()};
+$('m3').onclick=()=>{three=true;$('m3').classList.add('on');$('m2').classList.remove('on');$('mXw').classList.remove('hidden');calcM()};
+function calcM(){const qs=three?[['1',nv('mA')],['X',nv('mX')],['2',nv('mB')]]:[['1',nv('mA')],['2',nv('mB')]];
+  if(qs.some(q=>!(q[1]>1))){$('mOut').innerHTML='';return}
+  const s=qs.reduce((a,q)=>a+1/q[1],0),m=s-1;
+  $('mOut').innerHTML=`<div class="kpi full"><div class="k">Marge</div><div class="v ${m<.04?'g':m<.07?'a':'r'}">${pct(m)}</div></div>`+
+   qs.map(([n,q])=>{const p=(1/q)/s;return`<div class="kpi"><div class="k">${n} fair</div><div class="v">${f2(1/p)} <span class="mut">${pct(p)}</span></div></div>`}).join('')}
+['mA','mX','mB'].forEach(i=>$(i).addEventListener('input',calcM));
+
+/* ───── Prognose ───── */
+const fact=n=>{let f=1;for(let i=2;i<=n;i++)f*=i;return f};
+const pois=(k,l)=>Math.pow(l,k)*Math.exp(-l)/fact(k);
+function calcP(){
+  const hS=nv('hS'),hC=nv('hC'),aS=nv('aS'),aC=nv('aC'),L=nv('lg'),line=parseFloat($('ou').value);
+  if(![hS,hC,aS,aC,L].every(x=>x>0))return;
+  const lH=(hS/L)*(aC/L)*L,lA=(aS/L)*(hC/L)*L;let p1=0,pX=0,p2=0,ov=0,bt=0,sc=[];
+  for(let i=0;i<11;i++)for(let j=0;j<11;j++){const p=pois(i,lH)*pois(j,lA);
+    if(i>j)p1+=p;else if(i===j)pX+=p;else p2+=p;if(i+j>line)ov+=p;if(i&&j)bt+=p;sc.push([i,j,p])}
+  const tot=p1+pX+p2;
+  $('pRes').innerHTML=`<div class="kpi"><div class="k">xG Heim</div><div class="v">${lH.toFixed(2)}</div></div><div class="kpi"><div class="k">xG Gast</div><div class="v">${lA.toFixed(2)}</div></div>`;
+  const rows=[['Heimsieg (1)',p1],['Unentschieden (X)',pX],['Auswärtssieg (2)',p2],['Über '+line,ov],['Unter '+line,tot-ov],['Beide treffen: Ja',bt],['Beide treffen: Nein',tot-bt],['1X',p1+pX],['X2',pX+p2]];
+  $('pTbl').innerHTML='<tr><th>Markt</th><th>Wahrsch.</th><th>Fair</th></tr>'+rows.map(([n,p])=>`<tr data-q="${(1/p).toFixed(2)}" data-p="${p}"><td>${n}<div class="bar"><i style="width:${p*100}%;background:var(--v)"></i></div></td><td>${pct(p)}</td><td><b>${f2(1/p)}</b></td></tr>`).join('');
+  $('pTbl').querySelectorAll('tr[data-q]').forEach(r=>r.onclick=()=>toCalc(r.dataset.q,+r.dataset.p));
+  sc.sort((a,b)=>b[2]-a[2]);const mx=sc[0][2];
+  $('pTop').innerHTML=sc.slice(0,6).map(([i,j,p])=>`<div style="margin:6px 0"><div class="top" style="display:flex;justify-content:space-between"><b>${i} : ${j}</b><span>${pct(p)} · fair ${(1/p).toFixed(1)}</span></div><div class="bar"><i style="width:${p/mx*100}%;background:var(--c)"></i></div></div>`).join('');
+}
+['hS','hC','aS','aC','lg','ou'].forEach(i=>$(i).addEventListener('input',calcP));
+$('pP').onclick=()=>{$('pP').classList.add('on');$('pE').classList.remove('on');$('poisson').classList.remove('hidden');$('elo').classList.add('hidden')};
+$('pE').onclick=()=>{$('pE').classList.add('on');$('pP').classList.remove('on');$('elo').classList.remove('hidden');$('poisson').classList.add('hidden')};
+function calcE(){const A=nv('eA'),B=nv('eB'),H=nv('eH')||0,Q=nv('eQ');if(!isFinite(A)||!isFinite(B))return;
+  const p=1/(1+Math.pow(10,(B-A-H)/400));
+  $('eRes').innerHTML=`<div class="kpi"><div class="k">P(A)</div><div class="v">${pct(p)}</div></div><div class="kpi"><div class="k">P(B)</div><div class="v">${pct(1-p)}</div></div>
+   <div class="kpi"><div class="k">Fair A</div><div class="v">${f2(1/p)}</div></div><div class="kpi"><div class="k">Fair B</div><div class="v">${f2(1/(1-p))}</div></div>`;
+  if(Q>1){const ev=p*Q-1;$('eBadge').innerHTML=ev>0?`<span class="badge bg">✓ Value auf A +${pct(ev)}</span>`:`<span class="badge br">✗ Kein Value auf A (${pct(ev)})</span>`}}
+['eA','eB','eH','eQ'].forEach(i=>$(i).addEventListener('input',calcE));
+
+/* ───── Tracker ───── */
+let bets=store.get('wb2_bets',[]);
+const profit=b=>b.r==='w'?b.s*(b.q-1):b.r==='l'?-b.s:0;
+function saveB(){store.set('wb2_bets',bets);renderT()}
+function addBet(o){bets.push({id:Date.now()+Math.random(),d:new Date().toISOString().slice(0,10),r:'o',...o});saveB()}
+function renderT(){
+  const done=bets.filter(b=>b.r==='w'||b.r==='l'),st=done.reduce((a,b)=>a+b.s,0),pl=bets.reduce((a,b)=>a+profit(b),0);
+  const w=done.filter(b=>b.r==='w').length,avg=done.length?done.reduce((a,b)=>a+b.q,0)/done.length:0;
+  $('tStats').innerHTML=`<div class="kpi"><div class="k">Gewinn/Verlust</div><div class="v ${pl>=0?'g':'r'}">${pl>=0?'+':''}${eur(pl)}</div></div>
+   <div class="kpi"><div class="k">ROI</div><div class="v ${pl>=0?'g':'r'}">${st?pct(pl/st):'–'}</div></div>
+   <div class="kpi"><div class="k">Trefferquote</div><div class="v">${done.length?pct(w/done.length):'–'}</div></div>
+   <div class="kpi"><div class="k">Break-even</div><div class="v">${avg?pct(1/avg):'–'}</div></div>
+   <div class="kpi"><div class="k">Wetten (offen)</div><div class="v">${bets.length} <span class="mut">(${bets.filter(b=>b.r==='o').length})</span></div></div>
+   <div class="kpi"><div class="k">Ø Quote</div><div class="v">${avg?f2(avg):'–'}</div></div>`;
+  const m=new Date().toISOString().slice(0,7),mv=Math.max(0,-bets.filter(b=>b.d.slice(0,7)===m).reduce((a,b)=>a+profit(b),0)),u=S.lim>0?mv/S.lim:0;
+  $('tLimit').innerHTML=S.lim>0?`<div class="note">Verlust diesen Monat ${eur(mv)} von ${eur(S.lim)} Limit</div><div class="bar"><i style="width:${Math.min(100,u*100)}%;background:${u>=1?'var(--r)':u>.7?'var(--a)':'var(--g)'}"></i></div>`+
+    (u>=1?'<div style="margin-top:8px"><span class="badge br">⛔ Limit erreicht – Pause bis nächsten Monat</span></div>':u>.7?'<div style="margin-top:8px"><span class="badge ba">⚠ Limit fast erreicht</span></div>':''):'';
+  $('tList').innerHTML=bets.length?bets.slice().reverse().map(b=>{const p=profit(b);return`<div class="item">
+    <div class="top"><div><div class="t">${esc(b.e)}</div><div class="mut">${b.d} · ${esc(b.t||'–')} · ${esc(b.bk||'')} · ${f2(b.q)} · ${eur(b.s)}</div></div><button class="btn sm ghost" style="--k:var(--m)" data-del="${b.id}">×</button></div>
+    <div class="top" style="margin-top:6px;align-items:center"><select data-id="${b.id}" style="width:auto;padding:5px 8px;font-size:14px">${[['o','⏳ Offen'],['w','✅ Gewonnen'],['l','❌ Verloren'],['v','↩ Storno']].map(([k,n])=>`<option value="${k}"${b.r===k?' selected':''}>${n}</option>`).join('')}</select>
+    <b class="${p>0?'g':p<0?'r':''}">${b.r==='o'?'–':(p>0?'+':'')+eur(p)}</b></div></div>`}).join(''):'<div class="note">Noch keine Wetten.</div>';
+  $('tList').querySelectorAll('select').forEach(s=>s.onchange=()=>{bets.find(b=>String(b.id)===s.dataset.id).r=s.value;saveB()});
+  $('tList').querySelectorAll('[data-del]').forEach(x=>x.onclick=()=>{bets=bets.filter(b=>String(b.id)!==x.dataset.del);saveB()});
+}
+$('nAdd').onclick=()=>{const q=nv('nQ'),s=nv('nS'),e=$('nEv').value.trim();
+  if(!e||!(q>1)||!(s>0)){$('tMsg').textContent='Spiel, Quote (>1) und Einsatz ausfüllen.';return}
+  addBet({e,t:$('nTip').value.trim(),bk:$('nBk').value.trim(),q,s});['nEv','nTip','nBk','nQ','nS'].forEach(i=>$(i).value='');$('tMsg').textContent='Gespeichert ✓'};
+let arm=false;
+$('tClr').onclick=()=>{if(!arm){arm=true;$('tClr').textContent='Sicher? Nochmal tippen';setTimeout(()=>{arm=false;$('tClr').textContent='Alle löschen'},3000);return}
+  bets=[];arm=false;$('tClr').textContent='Alle löschen';saveB()};
+$('tCsv').onclick=async()=>{const csv='Datum;Spiel;Tipp;Buchmacher;Quote;Einsatz;Ergebnis;GuV\n'+bets.map(b=>[b.d,b.e,b.t,b.bk,b.q,b.s,b.r,profit(b).toFixed(2)].join(';')).join('\n');
+  try{await navigator.clipboard.writeText(csv);$('tMsg').textContent='CSV kopiert ✓'}catch(e){$('tMsg').textContent='Kopieren nicht erlaubt.'}};
+
+/* ───── Start ───── */
+show(location.hash.slice(1));initSetup();calcValue();calcM();calcP();calcE();renderT();render();
+if(location.protocol==='file:')msg('liveMsg','ℹ️ Als Datei geöffnet: Rechner, Prognose, Tracker & Demo gehen. Für <b>Live-Quoten</b> muss die Seite online laufen (GitHub Pages, siehe Anleitung).','ok');
+</script>
+</body>
+</html>
