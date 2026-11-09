@@ -52,7 +52,7 @@ STANDARD = {
     "REGION": "eu",
     "SHARP_BUCHMACHER": "pinnacle",
     "ZIEL_BUCHMACHER": "tipico_de,winamax_de",
-    "MIN_VALUE_PROZENT": "3",
+    "MIN_VALUE_PROZENT": "2",
     "MAX_VALUE_PROZENT": "25",
     "MIN_QUOTE": "1.30",
     "MAX_QUOTE": "6.00",
@@ -61,9 +61,9 @@ STANDARD = {
     "BANKROLL": "200",
     "KELLY_ANTEIL": "0.25",
     "MAX_EINSATZ_PROZENT": "3",
-    "VORLAUF_STUNDEN": "48",
+    "VORLAUF_STUNDEN": "72",
     "LIVE_SPIELE": "nein",
-    "MAX_QUOTEN_ALTER_MIN": "30",
+    "MAX_QUOTEN_ALTER_MIN": "0",
     "INTERVALL_MIN": "0",
     "MIN_INTERVALL_MIN": "20",
     "CREDIT_RESERVE": "20",
@@ -201,7 +201,7 @@ def gruppen(event, markt, cfg, jetzt):
     g = {}
     for b in event.get("bookmakers", []):
         try:
-            if (jetzt - parse_zeit(b["last_update"])).total_seconds() > cfg["max_alter"] * 60:
+            if cfg["max_alter"] > 0 and (jetzt - parse_zeit(b["last_update"])).total_seconds() > cfg["max_alter"] * 60:
                 continue
         except Exception:
             pass

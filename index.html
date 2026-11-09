@@ -106,6 +106,10 @@ a{color:var(--b)}
     <div class="note" style="margin-top:-4px">Beste Quote je Ausgang · <span class="g">grün</span> = über fairer Quote</div>
     <div id="lT"></div>
   </div>
+  <div class="card" style="--k:var(--a)">
+    <h2>🔍 Diagnose</h2>
+    <div id="lD"><div class="note">Erscheint nach dem Scan.</div></div>
+  </div>
 </section>
 
 <!-- ═════════ RECHNER ═════════ -->
@@ -221,6 +225,7 @@ a{color:var(--b)}
   <div class="card" style="--k:var(--a)">
     <h2>🏦 Meine Buchmacher</h2>
     <div class="note" style="margin:-6px 0 4px">Hier suchst du Value. Nur deutsche Lizenz (GGL-Whitelist)!</div>
+    <label class="chk" style="border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:4px"><input type="checkbox" id="o_all"> <b>Alle Buchmacher prüfen</b>&nbsp;<span class="mut">(mehr Treffer)</span></label>
     <div id="sBooks"></div>
   </div>
   <div class="card" style="--k:var(--v)">
@@ -237,6 +242,7 @@ a{color:var(--b)}
       <div><label>Spiele in nächsten … Std.</label><input id="o_hours" type="number" inputmode="numeric"></div>
       <div><label>Monatl. Verlustlimit €</label><input id="o_lim" type="number" inputmode="decimal"></div>
     </div>
+    <div class="grid" style="margin-top:9px"><div class="full"><label>Quoten ignorieren, wenn älter als … Min. (0 = nie)</label><input id="o_stale" type="number" inputmode="numeric"></div></div>
     <label class="chk" style="margin-top:8px"><input type="checkbox" id="o_live"> Laufende Spiele mitscannen</label>
     <button class="btn" id="sSave" style="--k:var(--v)">Speichern</button>
   </div>
@@ -275,8 +281,9 @@ const zeit=d=>`${WT[d.getDay()]} ${String(d.getDate()).padStart(2,'0')}.${String
 
 /* ───── Einstellungen ───── */
 const DEF={key:'',sports:['soccer_germany_bundesliga','soccer_epl'],markets:['h2h'],books:['tipico_de','winamax_de'],
-  minEdge:3,maxEdge:25,minQ:1.3,maxQ:6,bank:200,kelly:0.25,maxBet:3,tax:0,hours:48,lim:50,live:false};
+  minEdge:2,maxEdge:25,minQ:1.3,maxQ:6,bank:200,kelly:0.25,maxBet:3,tax:0,hours:72,lim:50,live:false,stale:0,allBooks:false,ver:2};
 let S=Object.assign({},DEF,store.get('wb2_set',{}));
+if(S.ver!==2){S.minEdge=Math.min(S.minEdge,2);S.hours=Math.max(S.hours,72);S.stale=0;S.ver=2;store.set('wb2_set',S)}
 const saveS=()=>store.set('wb2_set',S);
 
 /* ───── Navigation ───── */
@@ -310,7 +317,7 @@ async function api(path,params){
 function gruppen(ev,markt,now){
   const g={};
   for(const b of ev.bookmakers||[]){
-    if(b.last_update&&(now-new Date(b.last_update))>30*60e3)continue;
+    if(S.stale>0&&b.last_update&&(now-new Date(b.last_update))>S.stale*60e3)continue;
     for(const m of b.markets||[]){ if(m.key!==markt)continue;
       for(const o of m.outcomes){
         const gid=markt==='totals'?String(o.point):'';
@@ -318,12 +325,16 @@ function gruppen(ev,markt,now){
         ((g[gid]??={})[b.key]??={_t:b.title})[sel]=o.price;}}}
   return g;
 }
-function analysiere(events,sportKey,title,now){
+function neuDiag(){return{ev:0,fenster:0,sharp:0,ziel:0,maerkte:0,books:{},near:[]}}
+function analysiere(events,sportKey,title,now,D=neuDiag()){
   const V=[],SB=[],T=[];
   for(const ev of events){
+    D.ev++;
     const start=new Date(ev.commence_time);
     if(start<now&&!S.live)continue;
     if(start-now>S.hours*3600e3)continue;
+    D.fenster++;
+    for(const b of ev.bookmakers||[])D.books[b.title]=(D.books[b.title]||0)+1;
     const base={id:ev.id,sport:sportKey,liga:ev.sport_title||title,spiel:`${ev.home_team} – ${ev.away_team}`,start,live:start<now};
     for(const markt of S.markets){
       for(const [gid,bk] of Object.entries(gruppen(ev,markt,now))){
@@ -334,6 +345,7 @@ function analysiere(events,sportKey,title,now){
         if(markt==='totals'){if(aus.length!==2)continue;aus.sort()}
         const komp=Object.fromEntries(Object.entries(bk).filter(([,b])=>aus.every(s=>s in b)));
         const keys=Object.keys(komp);if(!keys.length)continue;
+        D.maerkte++;if(komp[SHARP])D.sharp++;if(S.books.some(k=>komp[k]))D.ziel++;
         let fair=null,quelle=null;
         if(komp[SHARP]){fair=ohneMarge(aus.map(s=>komp[SHARP][s]));quelle='Pinnacle'}
         else if(keys.length>=5){const sum=aus.map(()=>0);
@@ -345,12 +357,14 @@ function analysiere(events,sportKey,title,now){
         if(sum<1)SB.push({...base,markt,gewinn:1/sum-1,beine:beste.map(x=>({...x,anteil:(1/x.q)/sum}))});
         if(markt==='h2h')T.push({...base,aus:beste.map((x,i)=>({...x,fq:fair?1/fair[i]:null})),quelle,n:keys.length});
         if(!fair)continue;
-        const ziele=S.books.length?S.books:keys.filter(k=>k!==SHARP&&!BOERSEN.has(k));
-        for(const zk of ziele){ if(!komp[zk]||zk===SHARP)continue;
+        const alleBk=keys.filter(k=>k!==SHARP&&!BOERSEN.has(k));
+        const ziele=S.allBooks||!S.books.length?alleBk:S.books;
+        for(const zk of alleBk){
           aus.forEach((s,i)=>{const q=komp[zk][s],qe=q*(1-S.tax/100),p=fair[i],edge=p*qe-1;
-            if(q<S.minQ||q>S.maxQ)return;
-            if(edge>=S.minEdge/100&&edge<=S.maxEdge/100){const k=kelly(p,qe);
-              V.push({...base,markt,auswahl:s,quote:q,buch:komp[zk]._t,p,fq:1/p,edge,quelle,...k})}})}
+            if(q<S.minQ||q>S.maxQ||edge>S.maxEdge/100)return;
+            const meins=ziele.includes(zk),k=kelly(p,qe);
+            const o={...base,markt,auswahl:s,quote:q,buch:komp[zk]._t,p,fq:1/p,edge,quelle,meins,...k};
+            if(meins&&edge>=S.minEdge/100)V.push(o);else if(edge>-0.03)D.near.push(o)})}
       }}}
   return{V,SB,T};
 }
@@ -368,12 +382,13 @@ async function scan(){
   if(!S.key){msg('liveMsg','Kein API-Key. Bitte im Setup eintragen.');return}
   if(!S.sports.length){msg('liveMsg','Keine Liga gewählt (Setup).');return}
   const btn=$('scanBtn');btn.disabled=true;btn.innerHTML='<span class="spin"></span>Scanne …';msg('liveMsg','');
-  const now=new Date(),all={V:[],SB:[],T:[]};let rest=null,fehler=[];
+  const now=new Date(),all={V:[],SB:[],T:[]},D=neuDiag();let rest=null,fehler=[];
   for(const sp of S.sports){
     try{const r=await api(`/sports/${sp}/odds`,{apiKey:S.key,regions:'eu',markets:S.markets.join(','),oddsFormat:'decimal'});
-      rest=r.rest??rest;const a=analysiere(r.data,sp,sp,now);all.V.push(...a.V);all.SB.push(...a.SB);all.T.push(...a.T);
+      rest=r.rest??rest;const a=analysiere(r.data,sp,sp,now,D);all.V.push(...a.V);all.SB.push(...a.SB);all.T.push(...a.T);
     }catch(e){fehler.push(`${sp}: ${e.message}`);if(/Key|Credits/.test(e.message))break}}
-  LAST={...all,rest,zeit:now.toISOString(),demo:false};store.set('wb2_last',LAST);
+  D.near=D.near.sort((a,b)=>b.edge-a.edge).slice(0,10);
+  LAST={...all,D,rest,zeit:now.toISOString(),demo:false};store.set('wb2_last',LAST);
   if(fehler.length)msg('liveMsg',esc(fehler.join(' · ')));
   btn.disabled=false;btn.textContent='🔄 Live scannen';render();
 }
@@ -388,8 +403,9 @@ function demo(){
         {key:'h2h',outcomes:[[h,ph],['Draw',pd],[a,pa]].map(([n,p])=>{let q=1/(p*(1+m))*(1+(Math.random()*2-1)*r);
           if(k==='winamax_de'&&(i===1||i===4)&&n===a)q=1/p*1.07;if(k==='tipico_de'&&i===5&&n===h)q=1/p*1.12;return{name:n,price:+q.toFixed(2)}})},
         {key:'totals',outcomes:[{name:'Over',point:2.5,price:k==='tipico_de'&&i===2?2.18:1.93},{name:'Under',point:2.5,price:1.92}]}]}))}});
-  const keep=S.markets;S.markets=['h2h','totals'];const a=analysiere(ev,'soccer_demo','Bundesliga (DEMO)',now);S.markets=keep;
-  LAST={...a,rest:'DEMO',zeit:now.toISOString(),demo:true};msg('liveMsg','🧪 Demo mit Fantasie-Quoten – nicht echt!','ok');render();
+  const keep=S.markets;S.markets=['h2h','totals'];const D=neuDiag();const a=analysiere(ev,'soccer_demo','Bundesliga (DEMO)',now,D);S.markets=keep;
+  D.near=D.near.sort((a,b)=>b.edge-a.edge).slice(0,10);
+  LAST={...a,D,rest:'DEMO',zeit:now.toISOString(),demo:true};msg('liveMsg','🧪 Demo mit Fantasie-Quoten – nicht echt!','ok');render();
 }
 $('demoBtn').onclick=demo;
 
@@ -418,10 +434,33 @@ function render(){
     ${s.beine.map(b=>`<div class="top" style="margin-top:5px"><div>${esc(b.s)} @ <b>${f2(b.q)}</b> <span class="mut">${esc(b.b)}</span></div><b>${eur(G*b.anteil)}</b></div>`).join('')}
     <div class="mut" style="margin-top:4px">Sicherer Gewinn ≈ ${eur(G*s.gewinn)} · Quoten vor Abgabe prüfen!</div></div>`).join('')
     :'<div class="note">Keine Surebets gefunden.</div>';
+  renderDiag(L,V);
   $('lT').innerHTML=T.length?T.map(t=>`<div class="item"><div class="t">${icon(t.sport)} ${esc(t.spiel)}</div>
     <div class="mut">${esc(t.liga)} · ${zeit(t.start)} · ${t.n} Buchmacher</div>
     <div class="odds" style="--n:${t.aus.length}">${t.aus.map(a=>`<div class="odd ${a.fq&&a.q>a.fq?'hit':''}"><div class="mut">${esc(a.s.length>14?a.s.slice(0,13)+'…':a.s)}</div><b>${f2(a.q)}</b><div class="mut">${esc(a.b)}</div>${a.fq?`<div class="mut">fair ${f2(a.fq)}</div>`:''}</div>`).join('')}</div></div>`).join('')
     :'<div class="note">Keine Spiele im Zeitfenster.</div>';
+}
+function renderDiag(L,V){
+  const D=L.D;if(!D){$('lD').innerHTML='<div class="note">Neu scannen für Diagnose.</div>';return}
+  const top=Object.entries(D.books).sort((a,b)=>b[1]-a[1]);
+  const hinweise=[];
+  if(!D.fenster)hinweise.push(`Keine Spiele in den nächsten ${S.hours} Std. → Zeitfenster im Setup erhöhen oder andere Ligen wählen.`);
+  else{
+    if(D.sharp<D.maerkte*0.5)hinweise.push('Pinnacle fehlt oft → faire Quote nur per Konsens (ungenauer).');
+    if(!S.allBooks&&S.books.length&&D.ziel<D.maerkte*0.5)hinweise.push(`Deine Buchmacher sind nur bei ${D.ziel} von ${D.maerkte} Märkten dabei → „Alle Buchmacher prüfen“ einschalten.`);
+    if(!V.length)hinweise.push(`Kein Treffer ≥ ${S.minEdge} %. Das ist normal: Buchmacher passen Quoten schnell an. Mehr Ligen, Über/Unter oder abends kurz vor Anpfiff scannen hilft.`);}
+  $('lD').innerHTML=`<div class="kpis">
+    <div class="kpi"><div class="k">Spiele geladen</div><div class="v">${D.ev}</div></div>
+    <div class="kpi"><div class="k">Im Zeitfenster</div><div class="v">${D.fenster}</div></div>
+    <div class="kpi"><div class="k">Märkte mit Pinnacle</div><div class="v">${D.sharp}/${D.maerkte}</div></div>
+    <div class="kpi"><div class="k">Märkte mit deinen Buchm.</div><div class="v">${S.allBooks?'alle':D.ziel+'/'+D.maerkte}</div></div></div>
+    ${hinweise.map(h=>`<div class="note">💡 ${h}</div>`).join('')}
+    <div class="grp" style="margin-top:12px">Knapp daneben (beste Werte)</div>
+    ${D.near.length?D.near.map(n=>`<div class="top" style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)">
+      <div><b>${esc(n.auswahl)}</b> @ ${f2(n.quote)} <span class="mut">${esc(n.buch)}${n.meins?'':' · nicht deiner'}</span><div class="mut">${esc(n.spiel)} · fair ${f2(n.fq)}</div></div>
+      <span class="badge ${n.edge>0?(n.meins?'ba':'bv'):'br'}">${n.edge>0?'+':''}${pct(n.edge)}</span></div>`).join(''):'<div class="note">–</div>'}
+    <div class="grp" style="margin-top:12px">Buchmacher in den Daten</div>
+    <div class="mut">${top.map(([n,c])=>`${esc(n)} (${c})`).join(' · ')||'–'}</div>`;
 }
 $('sbStake').addEventListener('input',render);
 
@@ -454,9 +493,10 @@ function initSetup(){
   $('sBooks').querySelectorAll('[data-bk]').forEach(c=>c.onchange=()=>{S.books=[...$('sBooks').querySelectorAll('[data-bk]:checked')].map(x=>x.dataset.bk);saveS()});
   ['h2h','totals'].forEach(m=>{$('mk_'+m).checked=S.markets.includes(m);$('mk_'+m).onchange=()=>{
     S.markets=['h2h','totals'].filter(x=>$('mk_'+x).checked);if(!S.markets.length){S.markets=['h2h'];$('mk_h2h').checked=true}saveS();cnt()}});
-  const map={minEdge:'o_minEdge',maxEdge:'o_maxEdge',minQ:'o_minQ',maxQ:'o_maxQ',bank:'o_bank',maxBet:'o_maxBet',tax:'o_tax',hours:'o_hours',lim:'o_lim'};
+  const map={stale:'o_stale',minEdge:'o_minEdge',maxEdge:'o_maxEdge',minQ:'o_minQ',maxQ:'o_maxQ',bank:'o_bank',maxBet:'o_maxBet',tax:'o_tax',hours:'o_hours',lim:'o_lim'};
   for(const[k,id]of Object.entries(map))$(id).value=S[k];
-  $('o_kelly').value=String(S.kelly);$('o_live').checked=S.live;
+  $('o_kelly').value=String(S.kelly);$('o_live').checked=S.live;$('o_all').checked=S.allBooks;
+  $('o_all').onchange=()=>{S.allBooks=$('o_all').checked;saveS()};
   $('sSave').onclick=()=>{for(const[k,id]of Object.entries(map)){const x=nv(id);if(isFinite(x))S[k]=x}
     S.kelly=parseFloat($('o_kelly').value);S.live=$('o_live').checked;saveS();calcValue();renderT();
     msg('setMsg','✓ Gespeichert. Neue Filter gelten ab dem nächsten Scan.','ok');window.scrollTo(0,0)};
