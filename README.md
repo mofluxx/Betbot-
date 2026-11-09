@@ -6,11 +6,10 @@ Sportwetten-Helfer mit Live-Quoten: Value Bets, Surebets, Prognose-Modelle und W
 
 | Bereich | Inhalt |
 |---|---|
-| 📡 Live | Live-Quoten (The Odds API), Value Bets mit Kelly-Einsatz, Surebets, Quoten-Vergleich |
-| 🧮 Rechner | Value-Check, Buchmacher-Marge, faire Quoten |
-| 📊 Prognose | Poisson (Tore), Elo (Sieger) |
-| 📒 Tracker | Wetten, ROI, Trefferquote, monatliches Verlustlimit |
-| ⚙️ Setup | API-Key, Ligen, Märkte, Buchmacher, Filter |
+| 🎯 Tipps | Fertige Empfehlungen „Setze X € auf Y bei Z“ mit Score 0–100 und Begründung; Auto-Scan mit Credit-Einteilung; automatische Ligenwahl |
+| 📒 Tracker | Ein Tipp = ein Klick; Ergebnisse werden automatisch abgerechnet; ROI, Verlustlimit |
+| 🧰 Tools | Quote prüfen (z. B. neo.bet), Value-Rechner, Marge, Poisson, Elo |
+| ⚙️ Setup | API-Key, Risiko (Vorsichtig/Normal/Mutig), Buchmacher, Ligen |
 
 ## Start
 1. Gratis-Key holen: https://the-odds-api.com (500 Credits/Monat)
